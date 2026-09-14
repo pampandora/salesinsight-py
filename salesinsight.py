@@ -339,6 +339,45 @@ def calcular_metricas(df):
 
     return metricas
 
+# RF06 - Segmentação de clientes
+def segmentar_clientes(df):
+    """Agrupa clientes, calcula o gasto total e define o segmento."""
+
+    gastos_clientes = (
+        df.groupby("cliente")
+        .agg(total_gasto=("receita_total", "sum"))
+        .reset_index()
+    )
+
+    classificar = lambda total: (
+        "Ouro" if total > 15000
+        else "Prata" if total >= 5000
+        else "Bronze"
+    )
+
+    gastos_clientes["segmento"] = (
+        gastos_clientes["total_gasto"].apply(classificar)
+    )
+
+    top_10 = (
+        gastos_clientes
+        .sort_values("total_gasto", ascending=False)
+        .head(10)
+    )
+
+    distribuicao = (
+        gastos_clientes["segmento"]
+        .value_counts()
+        .rename_axis("segmento")
+        .reset_index(name="quantidade_clientes")
+    )
+
+    return {
+        "clientes": gastos_clientes,
+        "top_10": top_10,
+        "distribuicao": distribuicao
+    }
+
 # Execução
 gerar_dataset_vendas()
 df = carregar_dataset()
@@ -362,3 +401,11 @@ print(metricas["categorias"])
 
 print("\n=== MÉTRICAS POR REGIÃO ===")
 print(metricas["regioes"])
+
+segmentacao = segmentar_clientes(df)
+
+print("\n=== TOP 10 CLIENTES ===")
+print(segmentacao["top_10"])
+
+print("\n=== DISTRIBUIÇÃO POR SEGMENTO ===")
+print(segmentacao["distribuicao"])
