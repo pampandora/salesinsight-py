@@ -221,10 +221,144 @@ def limpar_dados(df):
 
     return df, relatorio
 
+# RF04 - Criação de colunas derivadas
+def criar_colunas_derivadas(df):
+    """Cria colunas calculadas a partir dos dados de vendas."""
+
+    df["receita_total"] = (
+        df["quantidade"] * df["preco_unitario"]
+    )
+
+    df["mes"] = [
+        data.month for data in df["data_venda"]
+    ]
+
+    df["ano"] = [
+        data.year for data in df["data_venda"]
+    ]
+
+    meses = {
+        1: "Janeiro",
+        2: "Fevereiro",
+        3: "Março",
+        4: "Abril",
+        5: "Maio",
+        6: "Junho",
+        7: "Julho",
+        8: "Agosto",
+        9: "Setembro",
+        10: "Outubro",
+        11: "Novembro",
+        12: "Dezembro"
+    }
+
+    df["mes_nome"] = df["mes"].map(meses)
+
+    trimestres = []
+
+    for mes in df["mes"]:
+        if mes <= 3:
+            trimestre = "Q1"
+        elif mes <= 6:
+            trimestre = "Q2"
+        elif mes <= 9:
+            trimestre = "Q3"
+        else:
+            trimestre = "Q4"
+
+        trimestres.append(trimestre)
+
+    df["trimestre"] = trimestres
+
+    faixas = []
+
+    for receita in df["receita_total"]:
+        if receita < 500:
+            faixa = "Baixo Valor"
+        elif receita < 5000:
+            faixa = "Medio Valor"
+        else:
+            faixa = "Alto Valor"
+
+        faixas.append(faixa)
+
+    df["faixa_receita_item"] = faixas
+
+    return df
+
+# RF05 - Agregações e métricas
+def calcular_metricas(df):
+    """Calcula métricas de vendas por diferentes dimensões."""
+
+    metricas_mensais = (
+        df.groupby(["mes", "mes_nome"])
+        .agg(
+            receita_total=("receita_total", "sum"),
+            quantidade_vendida=("quantidade", "sum"),
+            numero_vendas=("id_venda", "count")
+        )
+        .reset_index()
+        .sort_values("mes")
+    )
+
+    top_produtos = (
+        df.groupby("produto")
+        .agg(
+            receita_total=("receita_total", "sum")
+        )
+        .reset_index()
+        .sort_values("receita_total", ascending=False)
+        .head(5)
+    )
+
+    receita_categoria = (
+        df.groupby("categoria")
+        .agg(
+            receita_total=("receita_total", "sum")
+        )
+        .reset_index()
+        .sort_values("receita_total", ascending=False)
+    )
+
+    metricas_regiao = (
+        df.groupby("regiao")
+        .agg(
+            receita_total=("receita_total", "sum"),
+            ticket_medio=("receita_total", "mean")
+        )
+        .reset_index()
+        .sort_values("receita_total", ascending=False)
+    )
+
+    metricas = {
+        "mensais": metricas_mensais,
+        "top_produtos": top_produtos,
+        "categorias": receita_categoria,
+        "regioes": metricas_regiao
+    }
+
+    return metricas
 
 # Execução
 gerar_dataset_vendas()
 df = carregar_dataset()
 inspecionar_dados(df)
 df, relatorio = limpar_dados(df)
+df = criar_colunas_derivadas(df)
 
+print("\n=== DADOS APÓS TRANSFORMAÇÕES ===")
+print(df.head())
+
+metricas = calcular_metricas(df)
+
+print("\n=== MÉTRICAS MENSAIS ===")
+print(metricas["mensais"])
+
+print("\n=== TOP 5 PRODUTOS ===")
+print(metricas["top_produtos"])
+
+print("\n=== RECEITA POR CATEGORIA ===")
+print(metricas["categorias"])
+
+print("\n=== MÉTRICAS POR REGIÃO ===")
+print(metricas["regioes"])
