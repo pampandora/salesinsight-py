@@ -6,6 +6,9 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 
+import json
+import os
+
 
 # RF01 - Geração do dataset
 def gerar_dataset_vendas(caminho_csv="vendas.csv", n_registros=200, seed=42):
@@ -378,6 +381,95 @@ def segmentar_clientes(df):
         "distribuicao": distribuicao
     }
 
+#RF07
+def processar_coluna(df, coluna, funcao_transformacao, nome_saida=None):
+    """
+    Aplica uma função de transformação a uma coluna do DataFrame.
+    Demonstra o uso de função como argumento.
+    """
+    nome_saida = nome_saida or f"{coluna}_transformado"
+
+    df[nome_saida] = df[coluna].map(funcao_transformacao)
+
+    return df
+
+#RF08
+def calcular_estatisticas_gerais(df):
+    """Calcula estatísticas gerais das vendas."""
+
+    receita_media = df["receita_total"].mean()
+
+    return {
+        "total_vendas": len(df),
+        "receita_total": df["receita_total"].sum(),
+        "receita_media_por_venda": receita_media,
+        "vendas_acima_da_media": int(
+            (df["receita_total"] > receita_media).sum()
+        )
+    }
+
+def exportar_resultados(metricas, clientes, estatisticas):
+    """Exporta os resultados do projeto em CSV e JSON."""
+    os.makedirs("outputs", exist_ok=True)
+
+    por_mes = metricas["mensais"].to_dict("records")
+
+    with open(
+        "outputs/metricas_por_mes.csv",
+        "w",
+        newline="",
+        encoding="utf-8-sig"
+    ) as f:
+        escritor = csv.DictWriter(
+            f,
+            fieldnames=por_mes[0].keys()
+        )
+        escritor.writeheader()
+        escritor.writerows(por_mes)
+
+    clientes = clientes["clientes"].to_dict("records")
+
+    with open(
+        "outputs/segmentacao_clientes.csv",
+        "w",
+        newline="",
+        encoding="utf-8-sig"
+    ) as f:
+        escritor = csv.DictWriter(
+            f,
+            fieldnames=clientes[0].keys()
+        )
+        escritor.writeheader()
+        escritor.writerows(clientes)
+
+    serializavel = {
+        "total_vendas": int(estatisticas["total_vendas"]),
+        "receita_total": round(
+            float(estatisticas["receita_total"]), 2
+        ),
+        "receita_media_por_venda": round(
+            float(estatisticas["receita_media_por_venda"]), 2
+        ),
+        "vendas_acima_da_media": int(
+            estatisticas["vendas_acima_da_media"]
+        )
+    }
+
+    caminho = "outputs/estatisticas_gerais.json"
+
+    with open(caminho, "w", encoding="utf-8") as f:
+        json.dump(
+            serializavel,
+            f,
+            indent=4,
+            ensure_ascii=False
+        )
+
+    with open(caminho, "r", encoding="utf-8") as f:
+        conferencia = json.load(f)
+
+    print(f"JSON gravado e lido: {conferencia}")
+
 # Execução
 gerar_dataset_vendas()
 df = carregar_dataset()
@@ -409,3 +501,27 @@ print(segmentacao["top_10"])
 
 print("\n=== DISTRIBUIÇÃO POR SEGMENTO ===")
 print(segmentacao["distribuicao"])
+
+df = processar_coluna(
+    df,
+    "receita_total",
+    lambda x: round(x / 1000, 2),
+    nome_saida="receita_em_milhares"
+)
+df = processar_coluna(
+    df,
+    "quantidade",
+    lambda q: "Alto Volume" if q > 5 else "Baixo Volume",
+    nome_saida="perfil_volume"
+)
+
+print("\n=== COLUNAS CRIADAS NO RF07 ===")
+print(df[[
+    "receita_total",
+    "receita_em_milhares",
+    "quantidade",
+    "perfil_volume"
+]].head())
+
+estatisticas = calcular_estatisticas_gerais(df)
+exportar_resultados(metricas, segmentacao, estatisticas)
