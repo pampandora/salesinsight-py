@@ -2,5 +2,7 @@
     "total_vendas": 183,
     "receita_total": 1290346.3,
     "receita_media_por_venda": 7051.07,
+    "receita_mediana": 3330.66,
+    "receita_desvio_padrao": 7809.92,
     "vendas_acima_da_media": 70
 }

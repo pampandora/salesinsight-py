@@ -2,13 +2,13 @@ import csv
 import random
 import re
 from datetime import datetime, timedelta
-
-import pandas as pd
-import numpy as np
-
 import json
 import os
 
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # RF01 - Geração do dataset
 def gerar_dataset_vendas(caminho_csv="vendas.csv", n_registros=200, seed=42):
@@ -359,7 +359,7 @@ def segmentar_clientes(df):
     )
 
     gastos_clientes["segmento"] = (
-        gastos_clientes["total_gasto"].apply(classificar)
+        gastos_clientes["total_gasto"].map(classificar)
     )
 
     top_10 = (
@@ -397,14 +397,20 @@ def processar_coluna(df, coluna, funcao_transformacao, nome_saida=None):
 def calcular_estatisticas_gerais(df):
     """Calcula estatísticas gerais das vendas."""
 
-    receita_media = df["receita_total"].mean()
+    receitas = df["receita_total"].to_numpy()
+
+    receita_media = np.mean(receitas)
+    receita_mediana = np.median(receitas)
+    receita_desvio_padrao = np.std(receitas)
 
     return {
         "total_vendas": len(df),
-        "receita_total": df["receita_total"].sum(),
+        "receita_total": np.sum(receitas),
         "receita_media_por_venda": receita_media,
+        "receita_mediana": receita_mediana,
+        "receita_desvio_padrao": receita_desvio_padrao,
         "vendas_acima_da_media": int(
-            (df["receita_total"] > receita_media).sum()
+            np.sum(receitas > receita_media)
         )
     }
 
@@ -443,18 +449,23 @@ def exportar_resultados(metricas, clientes, estatisticas):
         escritor.writerows(clientes)
 
     serializavel = {
-        "total_vendas": int(estatisticas["total_vendas"]),
-        "receita_total": round(
-            float(estatisticas["receita_total"]), 2
-        ),
-        "receita_media_por_venda": round(
-            float(estatisticas["receita_media_por_venda"]), 2
-        ),
-        "vendas_acima_da_media": int(
-            estatisticas["vendas_acima_da_media"]
-        )
-    }
-
+    "total_vendas": int(estatisticas["total_vendas"]),
+    "receita_total": round(
+        float(estatisticas["receita_total"]), 2
+    ),
+    "receita_media_por_venda": round(
+        float(estatisticas["receita_media_por_venda"]), 2
+    ),
+    "receita_mediana": round(
+        float(estatisticas["receita_mediana"]), 2
+    ),
+    "receita_desvio_padrao": round(
+        float(estatisticas["receita_desvio_padrao"]), 2
+    ),
+    "vendas_acima_da_media": int(
+        estatisticas["vendas_acima_da_media"]
+    )
+}
     caminho = "outputs/estatisticas_gerais.json"
 
     with open(caminho, "w", encoding="utf-8") as f:
@@ -470,58 +481,143 @@ def exportar_resultados(metricas, clientes, estatisticas):
 
     print(f"JSON gravado e lido: {conferencia}")
 
-# Execução
-gerar_dataset_vendas()
-df = carregar_dataset()
-inspecionar_dados(df)
-df, relatorio = limpar_dados(df)
-df = criar_colunas_derivadas(df)
+#RF09 Fluxo de Execução
 
-print("\n=== DADOS APÓS TRANSFORMAÇÕES ===")
-print(df.head())
+def visualizar_receita_mensal(metricas):
+    """Exibe a evolução da receita total ao longo dos meses."""
 
-metricas = calcular_metricas(df)
+    dados = metricas["mensais"]
 
-print("\n=== MÉTRICAS MENSAIS ===")
-print(metricas["mensais"])
+    plt.figure(figsize=(10, 5))
 
-print("\n=== TOP 5 PRODUTOS ===")
-print(metricas["top_produtos"])
+    sns.lineplot(
+        data=dados,
+        x="mes_nome",
+        y="receita_total",
+        marker="o"
+    )
 
-print("\n=== RECEITA POR CATEGORIA ===")
-print(metricas["categorias"])
+    plt.title("Receita Total por Mês")
+    plt.xlabel("Mês")
+    plt.ylabel("Receita Total (R$)")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
 
-print("\n=== MÉTRICAS POR REGIÃO ===")
-print(metricas["regioes"])
+    plt.show()
 
-segmentacao = segmentar_clientes(df)
+class SalesInsight:
+    """Classe responsável por executar o fluxo do SalesInsight PY."""
 
-print("\n=== TOP 10 CLIENTES ===")
-print(segmentacao["top_10"])
+    def executar(self):
+        """Executa todas as etapas do projeto."""
 
-print("\n=== DISTRIBUIÇÃO POR SEGMENTO ===")
-print(segmentacao["distribuicao"])
+        # RF01 - Geração do dataset
+        gerar_dataset_vendas()
 
-df = processar_coluna(
-    df,
-    "receita_total",
-    lambda x: round(x / 1000, 2),
-    nome_saida="receita_em_milhares"
-)
-df = processar_coluna(
-    df,
-    "quantidade",
-    lambda q: "Alto Volume" if q > 5 else "Baixo Volume",
-    nome_saida="perfil_volume"
-)
+        # RF02 - Carregamento e inspeção
+        df = carregar_dataset()
+        inspecionar_dados(df)
 
-print("\n=== COLUNAS CRIADAS NO RF07 ===")
-print(df[[
-    "receita_total",
-    "receita_em_milhares",
-    "quantidade",
-    "perfil_volume"
-]].head())
+        # RF03 - Limpeza dos dados
+        df, relatorio = limpar_dados(df)
 
-estatisticas = calcular_estatisticas_gerais(df)
-exportar_resultados(metricas, segmentacao, estatisticas)
+        # RF04 - Criação das colunas derivadas
+        df = criar_colunas_derivadas(df)
+
+        print("\n=== DADOS APÓS TRANSFORMAÇÕES ===")
+        print(df.head())
+
+        # RF05 - Cálculo das métricas
+        metricas = calcular_metricas(df)
+        visualizar_receita_mensal(metricas)
+
+        print("\n=== MÉTRICAS MENSAIS ===")
+        print(metricas["mensais"])
+
+        print("\n=== TOP 5 PRODUTOS ===")
+        print(metricas["top_produtos"])
+
+        print("\n=== RECEITA POR CATEGORIA ===")
+        print(metricas["categorias"])
+
+        print("\n=== MÉTRICAS POR REGIÃO ===")
+        print(metricas["regioes"])
+
+        # RF06 - Segmentação dos clientes
+        segmentacao = segmentar_clientes(df)
+
+        print("\n=== TOP 10 CLIENTES ===")
+        print(segmentacao["top_10"])
+
+        print("\n=== DISTRIBUIÇÃO POR SEGMENTO ===")
+        print(segmentacao["distribuicao"])
+
+        # RF07 - Funções de transformação
+        df = processar_coluna(
+            df,
+            "receita_total",
+            lambda x: round(x / 1000, 2),
+            nome_saida="receita_em_milhares"
+        )
+
+        df = processar_coluna(
+            df,
+            "quantidade",
+            lambda q: "Alto Volume" if q > 5 else "Baixo Volume",
+            nome_saida="perfil_volume"
+        )
+
+        print("\n=== COLUNAS CRIADAS NO RF07 ===")
+        print(
+            df[
+                [
+                    "receita_total",
+                    "receita_em_milhares",
+                    "quantidade",
+                    "perfil_volume"
+                ]
+            ].head()
+        )
+
+        # RF08 - Estatísticas com NumPy
+        estatisticas = calcular_estatisticas_gerais(df)
+
+        print("\n=== ESTATÍSTICAS GERAIS ===")
+        print(f"Total de vendas: {estatisticas['total_vendas']}")
+        print(f"Receita total: {estatisticas['receita_total']:.2f}")
+        print(
+            f"Receita média por venda: "
+            f"{estatisticas['receita_media_por_venda']:.2f}"
+        )
+        print(
+            f"Receita mediana: "
+            f"{estatisticas['receita_mediana']:.2f}"
+        )
+        print(
+            f"Desvio padrão da receita: "
+            f"{estatisticas['receita_desvio_padrao']:.2f}"
+        )
+        print(
+            f"Vendas acima da média: "
+            f"{estatisticas['vendas_acima_da_media']}"
+        )
+
+        # RF08 - Exportação dos resultados
+        exportar_resultados(
+            metricas,
+            segmentacao,
+            estatisticas
+        )
+
+        print("\n[CONCLUIDO] Fluxo completo do SalesInsight PY.")
+
+
+def main():
+    """Executa o fluxo completo do SalesInsight PY."""
+
+    app = SalesInsight()
+    app.executar()
+
+
+if __name__ == "__main__":
+    main()
