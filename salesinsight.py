@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 # RF01 - Geração do dataset
 def gerar_dataset_vendas(caminho_csv="vendas.csv", n_registros=200, seed=42):
     """Gera um dataset sintético de vendas com dados sujos e salva em CSV."""
@@ -224,6 +225,7 @@ def limpar_dados(df):
 
     return df, relatorio
 
+
 # RF04 - Criação de colunas derivadas
 def criar_colunas_derivadas(df):
     """Cria colunas calculadas a partir dos dados de vendas."""
@@ -289,6 +291,7 @@ def criar_colunas_derivadas(df):
 
     return df
 
+
 # RF05 - Agregações e métricas
 def calcular_metricas(df):
     """Calcula métricas de vendas por diferentes dimensões."""
@@ -342,6 +345,7 @@ def calcular_metricas(df):
 
     return metricas
 
+
 # RF06 - Segmentação de clientes
 def segmentar_clientes(df):
     """Agrupa clientes, calcula o gasto total e define o segmento."""
@@ -381,7 +385,8 @@ def segmentar_clientes(df):
         "distribuicao": distribuicao
     }
 
-#RF07
+
+# RF07
 def processar_coluna(df, coluna, funcao_transformacao, nome_saida=None):
     """
     Aplica uma função de transformação a uma coluna do DataFrame.
@@ -393,7 +398,8 @@ def processar_coluna(df, coluna, funcao_transformacao, nome_saida=None):
 
     return df
 
-#RF08
+
+# RF08
 def calcular_estatisticas_gerais(df):
     """Calcula estatísticas gerais das vendas."""
 
@@ -413,6 +419,7 @@ def calcular_estatisticas_gerais(df):
             np.sum(receitas > receita_media)
         )
     }
+
 
 def exportar_resultados(metricas, clientes, estatisticas):
     """Exporta os resultados do projeto em CSV e JSON."""
@@ -449,23 +456,24 @@ def exportar_resultados(metricas, clientes, estatisticas):
         escritor.writerows(clientes)
 
     serializavel = {
-    "total_vendas": int(estatisticas["total_vendas"]),
-    "receita_total": round(
-        float(estatisticas["receita_total"]), 2
-    ),
-    "receita_media_por_venda": round(
-        float(estatisticas["receita_media_por_venda"]), 2
-    ),
-    "receita_mediana": round(
-        float(estatisticas["receita_mediana"]), 2
-    ),
-    "receita_desvio_padrao": round(
-        float(estatisticas["receita_desvio_padrao"]), 2
-    ),
-    "vendas_acima_da_media": int(
-        estatisticas["vendas_acima_da_media"]
-    )
-}
+        "total_vendas": int(estatisticas["total_vendas"]),
+        "receita_total": round(
+            float(estatisticas["receita_total"]), 2
+        ),
+        "receita_media_por_venda": round(
+            float(estatisticas["receita_media_por_venda"]), 2
+        ),
+        "receita_mediana": round(
+            float(estatisticas["receita_mediana"]), 2
+        ),
+        "receita_desvio_padrao": round(
+            float(estatisticas["receita_desvio_padrao"]), 2
+        ),
+        "vendas_acima_da_media": int(
+            estatisticas["vendas_acima_da_media"]
+        )
+    }
+
     caminho = "outputs/estatisticas_gerais.json"
 
     with open(caminho, "w", encoding="utf-8") as f:
@@ -481,12 +489,15 @@ def exportar_resultados(metricas, clientes, estatisticas):
 
     print(f"JSON gravado e lido: {conferencia}")
 
-#RF09 Fluxo de Execução
+
+# RF09 - Fluxo de Execução
 
 def visualizar_receita_mensal(metricas):
-    """Exibe a evolução da receita total ao longo dos meses."""
+    """Exibe e salva a evolução da receita total ao longo dos meses."""
 
     dados = metricas["mensais"]
+
+    os.makedirs("outputs/graficos", exist_ok=True)
 
     plt.figure(figsize=(10, 5))
 
@@ -503,7 +514,354 @@ def visualizar_receita_mensal(metricas):
     plt.xticks(rotation=45)
     plt.tight_layout()
 
+    plt.savefig(
+        "outputs/graficos/receita_total_por_mes.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+
     plt.show()
+    plt.close()
+
+
+# Gráfico - Top 5 produtos
+def visualizar_top_produtos(metricas):
+    """Exibe e salva o Top 5 produtos por receita."""
+
+    dados = metricas["top_produtos"]
+
+    os.makedirs("outputs/graficos", exist_ok=True)
+
+    plt.figure(figsize=(10, 5))
+
+    sns.barplot(
+        data=dados,
+        x="receita_total",
+        y="produto"
+    )
+
+    plt.title("Top 5 Produtos por Receita")
+    plt.xlabel("Receita Total (R$)")
+    plt.ylabel("Produto")
+    plt.tight_layout()
+
+    plt.savefig(
+        "outputs/graficos/top_5_produtos.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    plt.show()
+    plt.close()
+
+
+# Gráfico - Receita por categoria
+def visualizar_receita_categoria(metricas):
+    """Exibe e salva a receita total por categoria."""
+
+    dados = metricas["categorias"]
+
+    os.makedirs("outputs/graficos", exist_ok=True)
+
+    plt.figure(figsize=(10, 5))
+
+    sns.barplot(
+        data=dados,
+        x="categoria",
+        y="receita_total"
+    )
+
+    plt.title("Receita Total por Categoria")
+    plt.xlabel("Categoria")
+    plt.ylabel("Receita Total (R$)")
+    plt.xticks(rotation=20)
+    plt.tight_layout()
+
+    plt.savefig(
+        "outputs/graficos/receita_por_categoria.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    plt.show()
+    plt.close()
+
+
+# Gráfico - Receita por região
+def visualizar_receita_regiao(metricas):
+    """Exibe e salva a receita total por região."""
+
+    dados = metricas["regioes"]
+
+    os.makedirs("outputs/graficos", exist_ok=True)
+
+    plt.figure(figsize=(10, 5))
+
+    sns.barplot(
+        data=dados,
+        x="regiao",
+        y="receita_total"
+    )
+
+    plt.title("Receita Total por Região")
+    plt.xlabel("Região")
+    plt.ylabel("Receita Total (R$)")
+    plt.xticks(rotation=20)
+    plt.tight_layout()
+
+    plt.savefig(
+        "outputs/graficos/receita_por_regiao.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    plt.show()
+    plt.close()
+
+
+# Projeção de tendência
+def projetar_receita_media_movel(metricas, meses_futuros=3):
+    """Projeta a receita dos próximos meses usando média móvel."""
+
+    dados = metricas["mensais"].copy()
+
+    # Seleciona os últimos 3 meses disponíveis
+    ultimos_meses = dados["receita_total"].tail(3)
+
+    # Calcula a média das receitas
+    media_movel = ultimos_meses.mean()
+
+    ultimo_mes = dados["mes"].max()
+
+    projecoes = []
+
+    for i in range(1, meses_futuros + 1):
+        mes_projetado = ultimo_mes + i
+
+        # Volta para janeiro após dezembro
+        if mes_projetado > 12:
+            mes_projetado -= 12
+
+        projecoes.append({
+            "mes": mes_projetado,
+            "receita_projetada": media_movel
+        })
+
+    projecoes_df = pd.DataFrame(projecoes)
+
+    print("\n=== B02 - PROJEÇÃO DE RECEITA ===")
+    print(
+        f"Média móvel dos últimos 3 meses: "
+        f"R$ {media_movel:.2f}"
+    )
+
+    print("\nReceita projetada para os próximos meses:")
+    print(projecoes_df)
+
+    return projecoes_df
+
+
+# Gráfico - Receita real x projeção
+def visualizar_projecao_receita(metricas, projecao):
+    """Exibe e salva o gráfico de receita real e projetada."""
+
+    dados_reais = metricas["mensais"].copy()
+
+    meses = {
+        1: "Janeiro",
+        2: "Fevereiro",
+        3: "Março",
+        4: "Abril",
+        5: "Maio",
+        6: "Junho",
+        7: "Julho",
+        8: "Agosto",
+        9: "Setembro",
+        10: "Outubro",
+        11: "Novembro",
+        12: "Dezembro"
+    }
+
+    projecao = projecao.copy()
+    projecao["mes_nome"] = projecao["mes"].map(meses)
+
+    dados_reais["tipo"] = "Real"
+    projecao["tipo"] = "Projetada"
+
+    plt.figure(figsize=(10, 5))
+
+    sns.lineplot(
+        data=dados_reais,
+        x="mes_nome",
+        y="receita_total",
+        marker="o",
+        label="Receita Real"
+    )
+
+    sns.lineplot(
+        data=projecao,
+        x="mes_nome",
+        y="receita_projetada",
+        marker="o",
+        linestyle="--",
+        label="Receita Projetada"
+    )
+
+    plt.title("Receita Real x Projeção por Média Móvel")
+    plt.xlabel("Mês")
+    plt.ylabel("Receita (R$)")
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.tight_layout()
+
+    plt.savefig(
+        "outputs/graficos/receita_real_x_projecao.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    plt.show()
+    plt.close()
+
+
+# Pivot mês × categoria
+def criar_tabela_pivot(df):
+    """Cria uma tabela cruzada de receita por mês e categoria."""
+
+    tabela_pivot = pd.pivot_table(
+        df,
+        values="receita_total",
+        index="mes_nome",
+        columns="categoria",
+        aggfunc="sum",
+        fill_value=0
+    )
+
+    # Ordena os meses na ordem correta
+    ordem_meses = [
+        "Janeiro",
+        "Fevereiro",
+        "Março",
+        "Abril",
+        "Maio",
+        "Junho",
+        "Julho",
+        "Agosto",
+        "Setembro",
+        "Outubro",
+        "Novembro",
+        "Dezembro"
+    ]
+
+    tabela_pivot = tabela_pivot.reindex(ordem_meses)
+
+    print("\n=== B03 - TABELA PIVOT MÊS × CATEGORIA ===")
+    print(tabela_pivot)
+
+    return tabela_pivot
+
+
+# Histograma da receita
+def visualizar_distribuicao_receita(df):
+    """Exibe e salva a distribuição da receita por venda."""
+
+    os.makedirs("outputs/graficos", exist_ok=True)
+
+    plt.figure(figsize=(10, 5))
+
+    sns.histplot(
+        data=df,
+        x="receita_total",
+        bins=20,
+        kde=True
+    )
+
+    plt.title("Distribuição da Receita por Venda")
+    plt.xlabel("Receita por Venda (R$)")
+    plt.ylabel("Quantidade de Vendas")
+
+    plt.tight_layout()
+
+    plt.savefig(
+        "outputs/graficos/distribuicao_receita_por_venda.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    plt.show()
+    plt.close()
+
+
+# Exportação adicional dos dados relevantes
+def exportar_dados_adicionais(
+    df,
+    metricas,
+    segmentacao,
+    projecao,
+    tabela_pivot
+):
+    """Exporta os principais resultados adicionais em CSV."""
+
+    os.makedirs("outputs", exist_ok=True)
+
+    # Dataset tratado
+    df.to_csv(
+        "outputs/dataset_tratado.csv",
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    # Top 5 produtos
+    metricas["top_produtos"].to_csv(
+        "outputs/top_5_produtos.csv",
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    # Receita por categoria
+    metricas["categorias"].to_csv(
+        "outputs/receita_por_categoria.csv",
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    # Receita por região
+    metricas["regioes"].to_csv(
+        "outputs/receita_por_regiao.csv",
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    # Top 10 clientes
+    segmentacao["top_10"].to_csv(
+        "outputs/top_10_clientes.csv",
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    # Distribuição dos segmentos
+    segmentacao["distribuicao"].to_csv(
+        "outputs/distribuicao_segmentos.csv",
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    # Projeção
+    projecao.to_csv(
+        "outputs/projecao_receita.csv",
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    # Tabela pivot
+    tabela_pivot.to_csv(
+        "outputs/tabela_pivot_mes_categoria.csv",
+        encoding="utf-8-sig"
+    )
+
+    print("\n=== EXPORTAÇÃO DOS DADOS ===")
+    print("Dados adicionais exportados para a pasta 'outputs'.")
+
 
 class SalesInsight:
     """Classe responsável por executar o fluxo do SalesInsight PY."""
@@ -529,7 +887,33 @@ class SalesInsight:
 
         # RF05 - Cálculo das métricas
         metricas = calcular_metricas(df)
+
+        # Visualização da receita mensal
         visualizar_receita_mensal(metricas)
+
+        # Gráfico Top 5 produtos
+        visualizar_top_produtos(metricas)
+
+        # Gráfico receita por categoria
+        visualizar_receita_categoria(metricas)
+
+        # Gráfico receita por região
+        visualizar_receita_regiao(metricas)
+
+        # B02 - Projeção simples por média móvel
+        projecao = projetar_receita_media_movel(metricas)
+
+        # Gráfico da projeção
+        visualizar_projecao_receita(
+            metricas,
+            projecao
+        )
+
+        # B03 - Tabela cruzada mês × categoria
+        tabela_pivot = criar_tabela_pivot(df)
+
+        # B04 - Gráfico adicional
+        visualizar_distribuicao_receita(df)
 
         print("\n=== MÉTRICAS MENSAIS ===")
         print(metricas["mensais"])
@@ -607,6 +991,15 @@ class SalesInsight:
             metricas,
             segmentacao,
             estatisticas
+        )
+
+        # Exportação adicional dos dados
+        exportar_dados_adicionais(
+            df,
+            metricas,
+            segmentacao,
+            projecao,
+            tabela_pivot
         )
 
         print("\n[CONCLUIDO] Fluxo completo do SalesInsight PY.")
