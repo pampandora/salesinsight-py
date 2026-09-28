@@ -99,6 +99,9 @@ A separação do projeto em funções também foi adotada para facilitar a manut
 * Git e GitHub
 * GitHub Projects para organização do Kanban
 
+## Link Kanban
+https://github.com/users/pampandora/projects/3/views/1
+
 ## Video de demonstração
 
-[Inserir o link do Google Drive ou do YouTube aqui]
+https://drive.google.com/file/d/1WsIyvIuuKIZLQFeVNuanfE2yDg15-G53/view?usp=drive_link
