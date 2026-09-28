@@ -92,9 +92,12 @@ A separação do projeto em funções também foi adotada para facilitar a manut
   * `datetime`
   * `os`
   * `random`
+  * `pandas`
+  * `numpy`
+  * `matplotlib`
+  * `seaborn`
 * Git e GitHub
-* GitHub Desktop (opcional)
-* Trello / GitHub Projects para organização do Kanban
+* GitHub Projects para organização do Kanban
 
 ## Video de demonstração
 
